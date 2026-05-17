@@ -8,15 +8,46 @@ export interface PinQuickPickItem extends vscode.QuickPickItem {
 
 export class UIService {
   /**
-   * Mostrar cuadro de diálogo para ingresar descripción
+   * Mostrar cuadro de diálogo para editar descripción de un pin existente
    */
-  async getDescriptionInput(): Promise<string> {
+  async getDescriptionInput(currentDescription?: string): Promise<string | undefined> {
     const description = await vscode.window.showInputBox({
       placeHolder: 'Descripción del pin (opcional)',
-      prompt: '📌 Agregar descripción:',
+      prompt: '📌 Editar descripción:',
+      value: currentDescription || '',
+      ignoreFocusOut: true,
+    });
+    return description;
+  }
+
+  /**
+   * Mostrar cuadro para pedir descripción al crear pin
+   */
+  async askForDescription(): Promise<string> {
+    const description = await vscode.window.showInputBox({
+      placeHolder: 'Descripción (opcional)',
+      prompt: '📌 Agregar descripción al pin (Enter para saltar)',
       ignoreFocusOut: true,
     });
     return description || '';
+  }
+
+  /**
+   * Mostrar notificación con opción de agregar descripción después de crear
+   */
+  async promptAddDescription(): Promise<string | undefined> {
+    const action = await vscode.window.showInformationMessage(
+      '✅ Pin agregado',
+      'Agregar descripción'
+    );
+    if (action === 'Agregar descripción') {
+      return await vscode.window.showInputBox({
+        placeHolder: 'Descripción del pin',
+        prompt: '📌 Agregar descripción:',
+        ignoreFocusOut: true,
+      });
+    }
+    return undefined;
   }
 
   /**
@@ -118,10 +149,10 @@ export class UIService {
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 1) return 'Hace poco';
-    if (diffMins < 60) return `Hace ${diffMins}m`;
-    if (diffHours < 24) return `Hace ${diffHours}h`;
-    if (diffDays < 7) return `Hace ${diffDays}d`;
+    if (diffMins < 1) { return 'Hace poco'; }
+    if (diffMins < 60) { return `Hace ${diffMins}m`; }
+    if (diffHours < 24) { return `Hace ${diffHours}h`; }
+    if (diffDays < 7) { return `Hace ${diffDays}d`; }
 
     return new Date(date).toLocaleDateString();
   }

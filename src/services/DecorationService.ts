@@ -5,10 +5,10 @@ import { Pin } from '../types/Pin';
 
 export class DecorationService {
   private decorationType: vscode.TextEditorDecorationType;
+  private stickyDecorationType: vscode.TextEditorDecorationType;
   private decorations: Map<string, vscode.Range[]> = new Map();
 
   constructor() {
-    // Ruta al ícono del pin
     const iconPath = vscode.Uri.file(
       path.join(__dirname, '../../resources/pin.svg')
     );
@@ -41,6 +41,25 @@ export class DecorationService {
           borderColor: '#FFD700',
           borderStyle: 'solid',
           borderWidth: '1px',
+        },
+      });
+
+    this.stickyDecorationType =
+      vscode.window.createTextEditorDecorationType({
+        gutterIconPath: iconPath,
+        gutterIconSize: 'contain',
+        isWholeLine: true,
+        backgroundColor: 'rgba(255, 215, 0, 0.15)',
+        borderColor: new vscode.ThemeColor(
+          'pinpoint.decorationColor'
+        ),
+        borderStyle: 'solid',
+        borderWidth: '0 0 1px 0',
+        light: {
+          backgroundColor: 'rgba(255, 165, 0, 0.12)',
+        },
+        dark: {
+          backgroundColor: 'rgba(255, 215, 0, 0.12)',
         },
       });
   }
@@ -98,6 +117,30 @@ export class DecorationService {
   }
 
   /**
+   * Actualizar la decoración sticky del pin más cercano arriba del viewport
+   */
+  updateStickyPin(
+    editor: vscode.TextEditor,
+    pin: Pin | undefined,
+    firstVisibleLine: number
+  ): void {
+    if (pin && firstVisibleLine > 0 && firstVisibleLine < editor.document.lineCount) {
+      const line = editor.document.lineAt(firstVisibleLine);
+      const range = new vscode.Range(line.range.start, line.range.end);
+      editor.setDecorations(this.stickyDecorationType, [range]);
+    } else {
+      editor.setDecorations(this.stickyDecorationType, []);
+    }
+  }
+
+  /**
+   * Limpiar la decoración sticky
+   */
+  clearStickyPin(editor: vscode.TextEditor): void {
+    editor.setDecorations(this.stickyDecorationType, []);
+  }
+
+  /**
    * Limpiar todas las decoraciones
    */
   clearAllDecorations(): void {
@@ -106,5 +149,6 @@ export class DecorationService {
 
   dispose(): void {
     this.decorationType.dispose();
+    this.stickyDecorationType.dispose();
   }
 }

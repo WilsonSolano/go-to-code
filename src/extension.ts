@@ -1,45 +1,60 @@
-// src/extension.ts
 import * as vscode from 'vscode';
 import { PinService } from './services/PinService';
 import { DecorationService } from './services/DecorationService';
 import { UIService } from './services/UIService';
 import { CommandController } from './controllers/CommandController';
+import { PinTreeDataProvider } from './services/PinTreeDataProvider';
+import { PinCodeLensProvider } from './services/PinCodeLensProvider';
 
 let pinService: PinService;
 let decorationService: DecorationService;
 let uiService: UIService;
 let commandController: CommandController;
+let treeDataProvider: PinTreeDataProvider;
+let codeLensProvider: PinCodeLensProvider;
 
 export function activate(context: vscode.ExtensionContext) {
-  console.log('✨ PinPoint extension activada');
-
-  // Inicializar servicios
   pinService = new PinService(context);
   decorationService = new DecorationService();
   uiService = new UIService();
 
-  // Inicializar controlador de comandos
+  treeDataProvider = new PinTreeDataProvider();
+  codeLensProvider = new PinCodeLensProvider();
+
+  vscode.window.registerTreeDataProvider('pinpoint.pinsView', treeDataProvider);
+  vscode.window.registerTreeDataProvider('pinpoint.pinsPanel', treeDataProvider);
+
+  const pins = pinService.getPins();
+  treeDataProvider.refresh(pins);
+  codeLensProvider.refresh(pins);
+
+  const selector: vscode.DocumentSelector = { scheme: 'file' };
+  context.subscriptions.push(
+    vscode.languages.registerCodeLensProvider(selector, codeLensProvider)
+  );
+
   commandController = new CommandController(
     pinService,
     decorationService,
     uiService,
-    context
+    context,
+    treeDataProvider,
+    codeLensProvider
   );
 
-  // Escuchar cambios en pins
-  pinService.onPinChange((event) => {
-    console.log(`📌 Pin event: ${event}`);
+  pinService.onPinChange(() => {
+    const allPins = pinService.getPins();
+    treeDataProvider.refresh(allPins);
+    codeLensProvider.refresh(allPins);
     updateAllDecorations();
   });
 
-  // Actualizar decoraciones cuando se abre un archivo
   vscode.window.onDidChangeActiveTextEditor((editor) => {
     if (editor) {
       updateDecorations(editor);
     }
   });
 
-  // Actualizar decoraciones cuando cambia el contenido
   vscode.workspace.onDidChangeTextDocument((event) => {
     const editor = vscode.window.activeTextEditor;
     if (editor && event.document === editor.document) {
@@ -47,10 +62,7 @@ export function activate(context: vscode.ExtensionContext) {
     }
   });
 
-  // Actualizar decoraciones al iniciar
   updateAllDecorations();
-
-  console.log('✨ PinPoint inicializado correctamente');
 }
 
 function updateDecorations(editor: vscode.TextEditor): void {
@@ -66,8 +78,6 @@ function updateAllDecorations(): void {
 }
 
 export function deactivate() {
-  console.log('🛑 PinPoint extension desactivada');
-
   if (pinService) {
     pinService.dispose();
   }

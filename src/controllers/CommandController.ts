@@ -1,17 +1,30 @@
-// src/controllers/CommandController.ts
 import * as vscode from 'vscode';
+import { Pin } from '../types/Pin';
 import { PinService } from '../services/PinService';
 import { DecorationService } from '../services/DecorationService';
 import { UIService } from '../services/UIService';
+import { PinTreeDataProvider, PinItem } from '../services/PinTreeDataProvider';
+import { PinCodeLensProvider } from '../services/PinCodeLensProvider';
 
 export class CommandController {
+  private statusBarItem: vscode.StatusBarItem;
+  private lastStickyPin: Pin | undefined;
+
   constructor(
     private pinService: PinService,
     private decorationService: DecorationService,
     private uiService: UIService,
-    private context: vscode.ExtensionContext
+    private context: vscode.ExtensionContext,
+    private treeDataProvider: PinTreeDataProvider,
+    private codeLensProvider: PinCodeLensProvider
   ) {
+    this.statusBarItem = vscode.window.createStatusBarItem(
+      vscode.StatusBarAlignment.Left,
+      100
+    );
+    this.context.subscriptions.push(this.statusBarItem);
     this.registerCommands();
+    this.startStickyPinTracking();
   }
 
   private registerCommands(): void {
@@ -21,11 +34,11 @@ export class CommandController {
     this.registerPreviousPin();
     this.registerShowPinList();
     this.registerClearAllPins();
+    this.registerEditPinDescription();
+    this.registerNavigateToPin();
+    this.registerJumpToNearestPinAbove();
   }
 
-  /**
-   * Comando: Agregar pin
-   */
   private registerAddPin(): void {
     const command = vscode.commands.registerCommand(
       'pinpoint.addPin',
@@ -39,37 +52,44 @@ export class CommandController {
         const file = editor.document.uri.fsPath;
         const line = editor.selection.active.line;
 
-        // Verificar si ya existe un pin en esta línea
         const existingPin = this.pinService.getPinAtLine(file, line);
         if (existingPin) {
           this.uiService.showWarning('Ya existe un pin en esta línea');
           return;
         }
 
-        // Solicitar descripción
-        const description = await this.uiService.getDescriptionInput();
+        const pin = this.pinService.addPin(file, line);
+        this.refreshViews();
 
-        // Agregar pin
-        this.pinService.addPin(file, line, description);
-        this.uiService.showSuccess(
-          `Pin agregado en línea ${line + 1}`
-        );
+        const description = await this.uiService.promptAddDescription();
+        if (description !== undefined && description.trim()) {
+          this.pinService.updatePin(pin.id, description.trim());
+          this.refreshViews();
+        }
 
-        // Actualizar decoraciones
         this.updateAllDecorations();
       }
     );
-
     this.context.subscriptions.push(command);
   }
 
-  /**
-   * Comando: Eliminar pin
-   */
   private registerRemovePin(): void {
     const command = vscode.commands.registerCommand(
       'pinpoint.removePin',
-      async () => {
+      async (item?: PinItem) => {
+        if (item?.pin) {
+          const confirmed = await this.uiService.showConfirmation(
+            `¿Eliminar pin: "${item.pin.description || `Línea ${item.pin.line + 1}`}"?`
+          );
+          if (confirmed) {
+            this.pinService.removePin(item.pin.id);
+            this.uiService.showSuccess('Pin eliminado');
+            this.refreshViews();
+            this.updateAllDecorations();
+          }
+          return;
+        }
+
         const editor = vscode.window.activeTextEditor;
         if (!editor) {
           this.uiService.showError('No hay editor activo');
@@ -92,17 +112,14 @@ export class CommandController {
         if (confirmed) {
           this.pinService.removePin(pin.id);
           this.uiService.showSuccess('Pin eliminado');
+          this.refreshViews();
           this.updateAllDecorations();
         }
       }
     );
-
     this.context.subscriptions.push(command);
   }
 
-  /**
-   * Comando: Ir al siguiente pin
-   */
   private registerNextPin(): void {
     const command = vscode.commands.registerCommand(
       'pinpoint.nextPin',
@@ -125,13 +142,9 @@ export class CommandController {
         await this.navigateToPin(nextPin);
       }
     );
-
     this.context.subscriptions.push(command);
   }
 
-  /**
-   * Comando: Ir al pin anterior
-   */
   private registerPreviousPin(): void {
     const command = vscode.commands.registerCommand(
       'pinpoint.previousPin',
@@ -154,13 +167,9 @@ export class CommandController {
         await this.navigateToPin(prevPin);
       }
     );
-
     this.context.subscriptions.push(command);
   }
 
-  /**
-   * Comando: Mostrar lista de pins
-   */
   private registerShowPinList(): void {
     const command = vscode.commands.registerCommand(
       'pinpoint.showPinList',
@@ -173,13 +182,9 @@ export class CommandController {
         }
       }
     );
-
     this.context.subscriptions.push(command);
   }
 
-  /**
-   * Comando: Eliminar todos los pins
-   */
   private registerClearAllPins(): void {
     const command = vscode.commands.registerCommand(
       'pinpoint.clearAllPins',
@@ -197,18 +202,137 @@ export class CommandController {
         if (confirmed) {
           this.pinService.clearAllPins();
           this.uiService.showSuccess('Todos los pins han sido eliminados');
+          this.refreshViews();
           this.updateAllDecorations();
         }
       }
     );
-
     this.context.subscriptions.push(command);
   }
 
-  /**
-   * Navegar a un pin específico
-   */
-  private async navigateToPin(pin: any): Promise<void> {
+  private registerEditPinDescription(): void {
+    const command = vscode.commands.registerCommand(
+      'pinpoint.editPinDescription',
+      async (item?: PinItem) => {
+        let pin: Pin | undefined;
+
+        if (item?.pin) {
+          pin = item.pin;
+        } else {
+          const editor = vscode.window.activeTextEditor;
+          if (!editor) {
+            this.uiService.showError('No hay editor activo');
+            return;
+          }
+          pin = this.pinService.getPinAtLine(
+            editor.document.uri.fsPath,
+            editor.selection.active.line
+          );
+        }
+
+        if (!pin) {
+          this.uiService.showWarning('No se encontró el pin');
+          return;
+        }
+
+        const description = await this.uiService.getDescriptionInput(pin.description);
+        if (description !== undefined) {
+          this.pinService.updatePin(pin.id, description);
+          this.uiService.showSuccess('Descripción actualizada');
+          this.refreshViews();
+        }
+      }
+    );
+    this.context.subscriptions.push(command);
+  }
+
+  private registerNavigateToPin(): void {
+    const command = vscode.commands.registerCommand(
+      'pinpoint.navigateToPin',
+      async (pin: Pin) => {
+        if (pin) {
+          await this.navigateToPin(pin);
+        }
+      }
+    );
+    this.context.subscriptions.push(command);
+  }
+
+  private registerJumpToNearestPinAbove(): void {
+    const command = vscode.commands.registerCommand(
+      'pinpoint.jumpToNearestPinAbove',
+      async () => {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) {
+          this.uiService.showError('No hay editor activo');
+          return;
+        }
+
+        const firstVisibleLine = editor.visibleRanges[0].start.line;
+        const pin = this.pinService.getNearestPinAbove(
+          editor.document.uri.fsPath,
+          firstVisibleLine
+        );
+
+        if (pin) {
+          await this.navigateToPin(pin);
+        } else {
+          this.uiService.showWarning('No hay pins arriba');
+        }
+      }
+    );
+    this.context.subscriptions.push(command);
+  }
+
+  private startStickyPinTracking(): void {
+    const disposable = vscode.window.onDidChangeTextEditorVisibleRanges((event) => {
+      const editor = event.textEditor;
+      if (editor === vscode.window.activeTextEditor) {
+        this.updateStickyPin(editor);
+      }
+    });
+    this.context.subscriptions.push(disposable);
+
+    if (vscode.window.activeTextEditor) {
+      this.updateStickyPin(vscode.window.activeTextEditor);
+    }
+  }
+
+  private updateStickyPin(editor: vscode.TextEditor): void {
+    const visibleRanges = editor.visibleRanges;
+    if (visibleRanges.length === 0) {
+      this.statusBarItem.hide();
+      this.decorationService.clearStickyPin(editor);
+      return;
+    }
+
+    const firstVisibleLine = visibleRanges[0].start.line;
+    if (firstVisibleLine <= 0) {
+      this.statusBarItem.hide();
+      this.decorationService.clearStickyPin(editor);
+      return;
+    }
+
+    const pin = this.pinService.getNearestPinAbove(
+      editor.document.uri.fsPath,
+      firstVisibleLine
+    );
+
+    if (pin) {
+      this.lastStickyPin = pin;
+      const label = pin.description || `Línea ${pin.line + 1}`;
+      this.statusBarItem.text = `$(bookmark) ↑ ${label}`;
+      this.statusBarItem.tooltip = `${pin.file}:${pin.line + 1}`;
+      this.statusBarItem.command = 'pinpoint.jumpToNearestPinAbove';
+      this.statusBarItem.show();
+      this.decorationService.updateStickyPin(editor, pin, firstVisibleLine);
+    } else {
+      this.statusBarItem.hide();
+      this.decorationService.clearStickyPin(editor);
+    }
+  }
+
+  private async navigateToPin(pin: Pin): Promise<void> {
     try {
       const document = await vscode.workspace.openTextDocument(pin.file);
       const editor = await vscode.window.showTextDocument(document);
@@ -223,18 +347,20 @@ export class CommandController {
     }
   }
 
-  /**
-   * Actualizar decoraciones en todos los editores
-   */
   private updateAllDecorations(): void {
     const pins = this.pinService.getPins();
-
     vscode.window.visibleTextEditors.forEach((editor) => {
       this.decorationService.updateDecorations(editor, pins);
     });
   }
 
+  private refreshViews(): void {
+    const pins = this.pinService.getPins();
+    this.treeDataProvider.refresh(pins);
+    this.codeLensProvider.refresh(pins);
+  }
+
   public dispose(): void {
-    // Los comandos se limpian automáticamente
+    this.statusBarItem.dispose();
   }
 }

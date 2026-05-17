@@ -128,6 +128,30 @@ export class PinService {
   }
 
   /**
+   * Obtener el pin más cercano arriba de una línea
+   */
+  getNearestPinAbove(currentFile: string, currentLine: number): Pin | undefined {
+    const pins = this.getPins();
+    const sameFilePins = pins
+      .filter((pin) => pin.file === currentFile && pin.line < currentLine)
+      .sort((a, b) => b.line - a.line);
+
+    if (sameFilePins.length > 0) {
+      return sameFilePins[0];
+    }
+
+    const otherFilePins = pins
+      .filter((pin) => pin.file !== currentFile)
+      .sort((a, b) => b.line - a.line);
+
+    if (otherFilePins.length > 0) {
+      return otherFilePins[0];
+    }
+
+    return undefined;
+  }
+
+  /**
    * Obtener el siguiente pin desde una línea
    */
   getNextPin(currentFile: string, currentLine: number): Pin | undefined {

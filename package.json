@@ -53,6 +53,14 @@
       {
         "command": "pinpoint.clearAllPins",
         "title": "PinPoint: Eliminar todos los pins"
+      },
+      {
+        "command": "pinpoint.editPinDescription",
+        "title": "PinPoint: Editar descripción del pin"
+      },
+      {
+        "command": "pinpoint.jumpToNearestPinAbove",
+        "title": "PinPoint: Ir al pin más cercano arriba"
       }
     ],
     "keybindings": [
@@ -79,6 +87,31 @@
         "mac": "cmd+alt+b"
       }
     ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "pinpoint-sidebar",
+          "title": "PinPoint",
+          "icon": "resources/pin.svg"
+        }
+      ]
+    },
+    "views": {
+      "pinpoint-sidebar": [
+        {
+          "type": "tree",
+          "id": "pinpoint.pinsView",
+          "name": "Pines"
+        }
+      ],
+      "panel": [
+        {
+          "type": "tree",
+          "id": "pinpoint.pinsPanel",
+          "name": "PinPoint"
+        }
+      ]
+    },
     "menus": {
       "editor/context": [
         {
@@ -97,6 +130,24 @@
           "command": "pinpoint.showPinList",
           "group": "navigation",
           "when": "editorTextFocus"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "pinpoint.clearAllPins",
+          "when": "view == pinpoint.pinsView",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "pinpoint.removePin",
+          "when": "viewItem == pin",
+          "group": "inline"
+        },
+        {
+          "command": "pinpoint.editPinDescription",
+          "when": "viewItem == pin"
         }
       ]
     },
