@@ -1,21 +1,113 @@
 {
   "name": "go-to-code",
-  "displayName": "go to code",
-  "description": "Una extension para marcar un punto del codigo y poder regresar rapidamente a ella",
-  "version": "0.0.1",
+  "displayName": "go-to-code",
+  "description": "Marca puntos importantes en el código y navega rápidamente entre ellos",
+  "version": "0.1.0",
+  "publisher": "go-to-code",
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
   "engines": {
     "vscode": "^1.120.0"
   },
   "categories": [
-    "Other"
+    "Languages",
+    "Visualization"
   ],
-  "activationEvents": [],
+  "keywords": [
+    "bookmark",
+    "navigation",
+    "quick-jump",
+    "pinpoint"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "go-to-code.helloWorld",
-        "title": "Hello World"
+        "command": "pinpoint.addPin",
+        "title": "PinPoint: Agregar pin",
+        "icon": "$(bookmark)"
+      },
+      {
+        "command": "pinpoint.removePin",
+        "title": "PinPoint: Eliminar pin",
+        "icon": "$(close)"
+      },
+      {
+        "command": "pinpoint.nextPin",
+        "title": "PinPoint: Ir al siguiente pin"
+      },
+      {
+        "command": "pinpoint.previousPin",
+        "title": "PinPoint: Ir al pin anterior"
+      },
+      {
+        "command": "pinpoint.showPinList",
+        "title": "PinPoint: Mostrar lista de pins",
+        "icon": "$(bookmark-fill)"
+      },
+      {
+        "command": "pinpoint.clearAllPins",
+        "title": "PinPoint: Eliminar todos los pins"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "pinpoint.addPin",
+        "key": "ctrl+alt+p",
+        "mac": "cmd+alt+p",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "pinpoint.removePin",
+        "key": "ctrl+alt+d",
+        "mac": "cmd+alt+d",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "pinpoint.nextPin",
+        "key": "ctrl+alt+n",
+        "mac": "cmd+alt+n"
+      },
+      {
+        "command": "pinpoint.previousPin",
+        "key": "ctrl+alt+b",
+        "mac": "cmd+alt+b"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "pinpoint.addPin",
+          "group": "navigation",
+          "when": "editorTextFocus"
+        },
+        {
+          "command": "pinpoint.removePin",
+          "group": "navigation",
+          "when": "editorTextFocus"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "pinpoint.showPinList",
+          "group": "navigation",
+          "when": "editorTextFocus"
+        }
+      ]
+    },
+    "colors": [
+      {
+        "id": "pinpoint.decorationColor",
+        "description": "Color del marcador de pin",
+        "defaults": {
+          "dark": "#FFD700",
+          "light": "#FFA500"
+        }
       }
     ]
   },

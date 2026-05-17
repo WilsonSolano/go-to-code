@@ -1,26 +1,80 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
+// src/extension.ts
 import * as vscode from 'vscode';
+import { PinService } from './services/PinService';
+import { DecorationService } from './services/DecorationService';
+import { UIService } from './services/UIService';
+import { CommandController } from './controllers/CommandController';
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
+let pinService: PinService;
+let decorationService: DecorationService;
+let uiService: UIService;
+let commandController: CommandController;
+
 export function activate(context: vscode.ExtensionContext) {
+  console.log('✨ PinPoint extension activada');
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "go-to-code" is now active!');
+  // Inicializar servicios
+  pinService = new PinService(context);
+  decorationService = new DecorationService();
+  uiService = new UIService();
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	const disposable = vscode.commands.registerCommand('go-to-code.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from go to code!');
-	});
+  // Inicializar controlador de comandos
+  commandController = new CommandController(
+    pinService,
+    decorationService,
+    uiService,
+    context
+  );
 
-	context.subscriptions.push(disposable);
+  // Escuchar cambios en pins
+  pinService.onPinChange((event) => {
+    console.log(`📌 Pin event: ${event}`);
+    updateAllDecorations();
+  });
+
+  // Actualizar decoraciones cuando se abre un archivo
+  vscode.window.onDidChangeActiveTextEditor((editor) => {
+    if (editor) {
+      updateDecorations(editor);
+    }
+  });
+
+  // Actualizar decoraciones cuando cambia el contenido
+  vscode.workspace.onDidChangeTextDocument((event) => {
+    const editor = vscode.window.activeTextEditor;
+    if (editor && event.document === editor.document) {
+      updateDecorations(editor);
+    }
+  });
+
+  // Actualizar decoraciones al iniciar
+  updateAllDecorations();
+
+  console.log('✨ PinPoint inicializado correctamente');
 }
 
-// This method is called when your extension is deactivated
-export function deactivate() {}
+function updateDecorations(editor: vscode.TextEditor): void {
+  const pins = pinService.getPins();
+  decorationService.updateDecorations(editor, pins);
+}
+
+function updateAllDecorations(): void {
+  const pins = pinService.getPins();
+  vscode.window.visibleTextEditors.forEach((editor) => {
+    decorationService.updateDecorations(editor, pins);
+  });
+}
+
+export function deactivate() {
+  console.log('🛑 PinPoint extension desactivada');
+
+  if (pinService) {
+    pinService.dispose();
+  }
+  if (decorationService) {
+    decorationService.dispose();
+  }
+  if (commandController) {
+    commandController.dispose();
+  }
+}
