@@ -1,12 +1,13 @@
 {
+  "icon": "resources/logo.png",
   "name": "go-to-code",
   "displayName": "go-to-code",
   "description": "Marca puntos importantes en el código y navega rápidamente entre ellos",
   "version": "0.1.0",
-  "publisher": "go-to-code",
+  "publisher": "GoToCode",
   "repository": {
     "type": "git",
-    "url": ""
+    "url": "https://github.com/WilsonSolano/go-to-code.git"
   },
   "engines": {
     "vscode": "^1.120.0"
