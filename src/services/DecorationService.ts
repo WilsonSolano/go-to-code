@@ -17,51 +17,14 @@ export class DecorationService {
       vscode.window.createTextEditorDecorationType({
         gutterIconPath: iconPath,
         gutterIconSize: 'contain',
-
-        borderRadius: '3px',
         overviewRulerColor: new vscode.ThemeColor(
-          'pinpoint.decorationColor'
+          'go-to-code.decorationColor'
         ),
-        overviewRulerLane: vscode.OverviewRulerLane.Right,
-        backgroundColor: new vscode.ThemeColor(
-          'pinpoint.decorationColor'
-        ),
-
-        isWholeLine: false,
-
-        light: {
-          backgroundColor: '#FFA50044',
-          borderColor: '#FFA500',
-          borderStyle: 'solid',
-          borderWidth: '1px',
-        },
-
-        dark: {
-          backgroundColor: '#FFD70044',
-          borderColor: '#FFD700',
-          borderStyle: 'solid',
-          borderWidth: '1px',
-        },
+        overviewRulerLane: vscode.OverviewRulerLane.Right
       });
 
     this.stickyDecorationType =
-      vscode.window.createTextEditorDecorationType({
-        gutterIconPath: iconPath,
-        gutterIconSize: 'contain',
-        isWholeLine: true,
-        backgroundColor: 'rgba(255, 215, 0, 0.15)',
-        borderColor: new vscode.ThemeColor(
-          'pinpoint.decorationColor'
-        ),
-        borderStyle: 'solid',
-        borderWidth: '0 0 1px 0',
-        light: {
-          backgroundColor: 'rgba(255, 165, 0, 0.12)',
-        },
-        dark: {
-          backgroundColor: 'rgba(255, 215, 0, 0.12)',
-        },
-      });
+      vscode.window.createTextEditorDecorationType({});
   }
 
   /**
@@ -116,28 +79,12 @@ export class DecorationService {
     );
   }
 
-  /**
-   * Actualizar la decoración sticky del pin más cercano arriba del viewport
-   */
-  updateStickyPin(
-    editor: vscode.TextEditor,
-    pin: Pin | undefined,
-    firstVisibleLine: number
-  ): void {
-    if (pin && pin.line < firstVisibleLine && pin.line < editor.document.lineCount) {
-      const line = editor.document.lineAt(pin.line);
-      const range = new vscode.Range(line.range.start, line.range.end);
-      editor.setDecorations(this.stickyDecorationType, [range]);
-    } else {
-      editor.setDecorations(this.stickyDecorationType, []);
-    }
-  }
+  // Funcionalidad de sticky pin removida según requerimiento
 
   /**
-   * Limpiar la decoración sticky
+   * Limpiar la decoración sticky (Mantenido para compatibilidad temporal si es llamado)
    */
   clearStickyPin(editor: vscode.TextEditor): void {
-    editor.setDecorations(this.stickyDecorationType, []);
   }
 
   /**

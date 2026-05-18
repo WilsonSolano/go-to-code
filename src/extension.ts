@@ -21,8 +21,8 @@ export function activate(context: vscode.ExtensionContext) {
   treeDataProvider = new PinTreeDataProvider();
   codeLensProvider = new PinCodeLensProvider();
 
-  vscode.window.registerTreeDataProvider('pinpoint.pinsView', treeDataProvider);
-  vscode.window.registerTreeDataProvider('pinpoint.pinsPanel', treeDataProvider);
+  vscode.window.registerTreeDataProvider('go-to-code.pinsView', treeDataProvider);
+  vscode.window.registerTreeDataProvider('go-to-code.pinsPanel', treeDataProvider);
 
   const pins = pinService.getPins();
   treeDataProvider.refresh(pins);

@@ -33,6 +33,7 @@ export class CommandController {
     this.registerNextPin();
     this.registerPreviousPin();
     this.registerShowPinList();
+    this.registerShowFilePins();
     this.registerClearAllPins();
     this.registerEditPinDescription();
     this.registerNavigateToPin();
@@ -41,7 +42,7 @@ export class CommandController {
 
   private registerAddPin(): void {
     const command = vscode.commands.registerCommand(
-      'pinpoint.addPin',
+      'go-to-code.addPin',
       async () => {
         const editor = vscode.window.activeTextEditor;
         if (!editor) {
@@ -75,18 +76,13 @@ export class CommandController {
 
   private registerRemovePin(): void {
     const command = vscode.commands.registerCommand(
-      'pinpoint.removePin',
+      'go-to-code.removePin',
       async (item?: PinItem) => {
         if (item?.pin) {
-          const confirmed = await this.uiService.showConfirmation(
-            `¿Eliminar pin: "${item.pin.description || `Línea ${item.pin.line + 1}`}"?`
-          );
-          if (confirmed) {
-            this.pinService.removePin(item.pin.id);
-            this.uiService.showSuccess('Pin eliminado');
-            this.refreshViews();
-            this.updateAllDecorations();
-          }
+          this.pinService.removePin(item.pin.id);
+          this.uiService.showSuccess('Pin eliminado');
+          this.refreshViews();
+          this.updateAllDecorations();
           return;
         }
 
@@ -105,16 +101,10 @@ export class CommandController {
           return;
         }
 
-        const confirmed = await this.uiService.showConfirmation(
-          `¿Eliminar el pin: "${pin.description || 'Sin descripción'}"?`
-        );
-
-        if (confirmed) {
-          this.pinService.removePin(pin.id);
-          this.uiService.showSuccess('Pin eliminado');
-          this.refreshViews();
-          this.updateAllDecorations();
-        }
+        this.pinService.removePin(pin.id);
+        this.uiService.showSuccess('Pin eliminado');
+        this.refreshViews();
+        this.updateAllDecorations();
       }
     );
     this.context.subscriptions.push(command);
@@ -122,7 +112,7 @@ export class CommandController {
 
   private registerNextPin(): void {
     const command = vscode.commands.registerCommand(
-      'pinpoint.nextPin',
+      'go-to-code.nextPin',
       async () => {
         const editor = vscode.window.activeTextEditor;
         if (!editor) {
@@ -147,7 +137,7 @@ export class CommandController {
 
   private registerPreviousPin(): void {
     const command = vscode.commands.registerCommand(
-      'pinpoint.previousPin',
+      'go-to-code.previousPin',
       async () => {
         const editor = vscode.window.activeTextEditor;
         if (!editor) {
@@ -172,7 +162,7 @@ export class CommandController {
 
   private registerShowPinList(): void {
     const command = vscode.commands.registerCommand(
-      'pinpoint.showPinList',
+      'go-to-code.showPinList',
       async () => {
         const pins = this.pinService.getPins();
         const selected = await this.uiService.showPinsList(pins);
@@ -185,9 +175,37 @@ export class CommandController {
     this.context.subscriptions.push(command);
   }
 
+  private registerShowFilePins(): void {
+    const command = vscode.commands.registerCommand(
+      'go-to-code.showFilePins',
+      async () => {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) {
+          this.uiService.showError('No hay editor activo');
+          return;
+        }
+        
+        const filePath = editor.document.uri.fsPath;
+        const pins = this.pinService.getPinsByFile(filePath);
+        
+        if (pins.length === 0) {
+          this.uiService.showWarning('No hay pins en este archivo');
+          return;
+        }
+
+        const selected = await this.uiService.showPinsList(pins);
+
+        if (selected) {
+          await this.navigateToPin(selected);
+        }
+      }
+    );
+    this.context.subscriptions.push(command);
+  }
+
   private registerClearAllPins(): void {
     const command = vscode.commands.registerCommand(
-      'pinpoint.clearAllPins',
+      'go-to-code.clearAllPins',
       async () => {
         const pins = this.pinService.getPins();
         if (pins.length === 0) {
@@ -212,7 +230,7 @@ export class CommandController {
 
   private registerEditPinDescription(): void {
     const command = vscode.commands.registerCommand(
-      'pinpoint.editPinDescription',
+      'go-to-code.editPinDescription',
       async (item?: PinItem) => {
         let pin: Pin | undefined;
 
@@ -248,7 +266,7 @@ export class CommandController {
 
   private registerNavigateToPin(): void {
     const command = vscode.commands.registerCommand(
-      'pinpoint.navigateToPin',
+      'go-to-code.navigateToPin',
       async (pin: Pin) => {
         if (pin) {
           await this.navigateToPin(pin);
@@ -260,7 +278,7 @@ export class CommandController {
 
   private registerJumpToNearestPinAbove(): void {
     const command = vscode.commands.registerCommand(
-      'pinpoint.jumpToNearestPinAbove',
+      'go-to-code.jumpToNearestPinAbove',
       async () => {
         const editor = vscode.window.activeTextEditor;
         if (!editor) {
@@ -328,11 +346,10 @@ export class CommandController {
       this.statusBarItem.tooltip = `Ir al pin: ${pin.file}:${pin.line + 1}`;
       this.statusBarItem.command = {
         title: 'Ir al pin',
-        command: 'pinpoint.navigateToPin',
+        command: 'go-to-code.navigateToPin',
         arguments: [pin],
       };
       this.statusBarItem.show();
-      this.decorationService.updateStickyPin(editor, pin, firstVisibleLine);
     } else {
       this.lastStickyPin = undefined;
       this.statusBarItem.hide();

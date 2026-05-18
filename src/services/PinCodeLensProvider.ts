@@ -21,7 +21,7 @@ export class PinCodeLensProvider implements vscode.CodeLensProvider {
       const range = new vscode.Range(line, 0, line, 0);
       return new vscode.CodeLens(range, {
         title: `📌 ${pin.description || `Línea ${pin.line + 1}`}`,
-        command: 'pinpoint.navigateToPin',
+        command: 'go-to-code.navigateToPin',
         arguments: [pin],
         tooltip: `${pin.file}:${pin.line + 1}`,
       });

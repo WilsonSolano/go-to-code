@@ -19,7 +19,7 @@
     "bookmark",
     "navigation",
     "quick-jump",
-    "pinpoint"
+    "go-to-code"
   ],
   "activationEvents": [
     "onStartupFinished"
@@ -28,61 +28,67 @@
   "contributes": {
     "commands": [
       {
-        "command": "pinpoint.addPin",
-        "title": "PinPoint: Agregar pin",
+        "command": "go-to-code.addPin",
+        "title": "Go To Code: Agregar pin",
         "icon": "$(bookmark)"
       },
       {
-        "command": "pinpoint.removePin",
-        "title": "PinPoint: Eliminar pin",
+        "command": "go-to-code.removePin",
+        "title": "Go To Code: Eliminar pin",
         "icon": "$(close)"
       },
       {
-        "command": "pinpoint.nextPin",
-        "title": "PinPoint: Ir al siguiente pin"
+        "command": "go-to-code.nextPin",
+        "title": "Go To Code: Ir al siguiente pin"
       },
       {
-        "command": "pinpoint.previousPin",
-        "title": "PinPoint: Ir al pin anterior"
+        "command": "go-to-code.previousPin",
+        "title": "Go To Code: Ir al pin anterior"
       },
       {
-        "command": "pinpoint.showPinList",
-        "title": "PinPoint: Mostrar lista de pins",
+        "command": "go-to-code.showPinList",
+        "title": "Go To Code: Mostrar lista de pins",
         "icon": "$(bookmark-fill)"
       },
       {
-        "command": "pinpoint.clearAllPins",
-        "title": "PinPoint: Eliminar todos los pins"
+        "command": "go-to-code.clearAllPins",
+        "title": "Go To Code: Eliminar todos los pins"
       },
       {
-        "command": "pinpoint.editPinDescription",
-        "title": "PinPoint: Editar descripción del pin"
+        "command": "go-to-code.editPinDescription",
+        "title": "Go To Code: Editar descripción del pin"
       },
       {
-        "command": "pinpoint.jumpToNearestPinAbove",
-        "title": "PinPoint: Ir al pin más cercano arriba"
+        "command": "go-to-code.jumpToNearestPinAbove",
+        "title": "Go To Code: Ir al pin más cercano arriba",
+        "icon": "$(arrow-up)"
+      },
+      {
+        "command": "go-to-code.showFilePins",
+        "title": "Go To Code: Mostrar pines de este archivo",
+        "icon": "$(menu)"
       }
     ],
     "keybindings": [
       {
-        "command": "pinpoint.addPin",
+        "command": "go-to-code.addPin",
         "key": "ctrl+alt+p",
         "mac": "cmd+alt+p",
         "when": "editorTextFocus"
       },
       {
-        "command": "pinpoint.removePin",
+        "command": "go-to-code.removePin",
         "key": "ctrl+alt+d",
         "mac": "cmd+alt+d",
         "when": "editorTextFocus"
       },
       {
-        "command": "pinpoint.nextPin",
+        "command": "go-to-code.nextPin",
         "key": "ctrl+alt+n",
         "mac": "cmd+alt+n"
       },
       {
-        "command": "pinpoint.previousPin",
+        "command": "go-to-code.previousPin",
         "key": "ctrl+alt+b",
         "mac": "cmd+alt+b"
       }
@@ -90,70 +96,75 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "pinpoint-sidebar",
-          "title": "PinPoint",
+          "id": "go-to-code-sidebar",
+          "title": "Go To Code",
           "icon": "resources/pin.svg"
         }
       ]
     },
     "views": {
-      "pinpoint-sidebar": [
+      "go-to-code-sidebar": [
         {
           "type": "tree",
-          "id": "pinpoint.pinsView",
+          "id": "go-to-code.pinsView",
           "name": "Pines"
         }
       ],
       "panel": [
         {
           "type": "tree",
-          "id": "pinpoint.pinsPanel",
-          "name": "PinPoint"
+          "id": "go-to-code.pinsPanel",
+          "name": "Go To Code"
         }
       ]
     },
     "menus": {
       "editor/context": [
         {
-          "command": "pinpoint.addPin",
+          "command": "go-to-code.addPin",
           "group": "navigation",
           "when": "editorTextFocus"
         },
         {
-          "command": "pinpoint.removePin",
+          "command": "go-to-code.removePin",
           "group": "navigation",
           "when": "editorTextFocus"
         }
       ],
       "editor/title": [
         {
-          "command": "pinpoint.showPinList",
-          "group": "navigation",
+          "command": "go-to-code.jumpToNearestPinAbove",
+          "group": "navigation@1",
+          "when": "editorTextFocus"
+        },
+        {
+          "command": "go-to-code.showFilePins",
+          "group": "navigation@2",
           "when": "editorTextFocus"
         }
       ],
       "view/title": [
         {
-          "command": "pinpoint.clearAllPins",
-          "when": "view == pinpoint.pinsView",
+          "command": "go-to-code.clearAllPins",
+          "when": "view == go-to-code.pinsView",
           "group": "navigation"
         }
       ],
       "view/item/context": [
         {
-          "command": "pinpoint.removePin",
+          "command": "go-to-code.removePin",
           "when": "viewItem == pin",
           "group": "inline"
         },
         {
-          "command": "pinpoint.editPinDescription",
+          "command": "go-to-code.editPinDescription",
           "when": "viewItem == pin"
         }
       ]
     },
     "colors": [
       {
-        "id": "pinpoint.decorationColor",
+        "id": "go-to-code.decorationColor",
         "description": "Color del marcador de pin",
         "defaults": {
           "dark": "#FFD700",

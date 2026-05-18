@@ -70,7 +70,7 @@ export class PinItem extends vscode.TreeItem {
     this.contextValue = 'pin';
     this.iconPath = new vscode.ThemeIcon('bookmark');
     this.command = {
-      command: 'pinpoint.navigateToPin',
+      command: 'go-to-code.navigateToPin',
       title: 'Ir al pin',
       arguments: [pin],
     };

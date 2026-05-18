@@ -16,7 +16,7 @@ export class PinService {
    * Cargar pins desde el almacenamiento persistente
    */
   private loadPins(): void {
-    const storage = this.context.workspaceState.get<PinStorage>('pinpoint.storage', {
+    const storage = this.context.workspaceState.get<PinStorage>('go-to-code.storage', {
       pins: [],
       lastId: 0,
     });
@@ -36,7 +36,7 @@ export class PinService {
       pins: Array.from(this.pins.values()),
       lastId: this.lastId,
     };
-    this.context.workspaceState.update('pinpoint.storage', storage);
+    this.context.workspaceState.update('go-to-code.storage', storage);
   }
 
   /**
