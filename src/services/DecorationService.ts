@@ -124,8 +124,8 @@ export class DecorationService {
     pin: Pin | undefined,
     firstVisibleLine: number
   ): void {
-    if (pin && firstVisibleLine > 0 && firstVisibleLine < editor.document.lineCount) {
-      const line = editor.document.lineAt(firstVisibleLine);
+    if (pin && pin.line < firstVisibleLine && pin.line < editor.document.lineCount) {
+      const line = editor.document.lineAt(pin.line);
       const range = new vscode.Range(line.range.start, line.range.end);
       editor.setDecorations(this.stickyDecorationType, [range]);
     } else {

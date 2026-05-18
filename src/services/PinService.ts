@@ -211,6 +211,27 @@ export class PinService {
     return pins[0];
   }
 
+  /**
+   * Obtener el pin más cercano a una línea, sin importar si está arriba o abajo.
+   * Prioriza los que están arriba (ya pasados).
+   */
+  getNearestPinInFile(file: string, currentLine: number): Pin | undefined {
+    const filePins = this.getPinsByFile(file);
+    if (filePins.length === 0) { return undefined; }
+
+    // Prefiere el más cercano arriba (ya pasado en el scroll)
+    const above = filePins
+      .filter((p) => p.line <= currentLine)
+      .sort((a, b) => b.line - a.line);
+    if (above.length > 0) { return above[0]; }
+
+    // Si no hay ninguno arriba, el más cercano abajo
+    const below = filePins
+      .filter((p) => p.line > currentLine)
+      .sort((a, b) => a.line - b.line);
+    return below[0];
+  }
+
   dispose(): void {
     this.onPinChangeEmitter.dispose();
   }

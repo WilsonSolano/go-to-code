@@ -285,13 +285,22 @@ export class CommandController {
   }
 
   private startStickyPinTracking(): void {
-    const disposable = vscode.window.onDidChangeTextEditorVisibleRanges((event) => {
+    const scrollDisposable = vscode.window.onDidChangeTextEditorVisibleRanges((event) => {
       const editor = event.textEditor;
       if (editor === vscode.window.activeTextEditor) {
         this.updateStickyPin(editor);
       }
     });
-    this.context.subscriptions.push(disposable);
+    this.context.subscriptions.push(scrollDisposable);
+
+    const activeEditorDisposable = vscode.window.onDidChangeActiveTextEditor((editor) => {
+      if (editor) {
+        this.updateStickyPin(editor);
+      } else {
+        this.statusBarItem.hide();
+      }
+    });
+    this.context.subscriptions.push(activeEditorDisposable);
 
     if (vscode.window.activeTextEditor) {
       this.updateStickyPin(vscode.window.activeTextEditor);
@@ -307,26 +316,25 @@ export class CommandController {
     }
 
     const firstVisibleLine = visibleRanges[0].start.line;
-    if (firstVisibleLine <= 0) {
-      this.statusBarItem.hide();
-      this.decorationService.clearStickyPin(editor);
-      return;
-    }
+    const filePath = editor.document.uri.fsPath;
 
-    const pin = this.pinService.getNearestPinAbove(
-      editor.document.uri.fsPath,
-      firstVisibleLine
-    );
+    const pin = this.pinService.getNearestPinInFile(filePath, firstVisibleLine);
 
     if (pin) {
       this.lastStickyPin = pin;
       const label = pin.description || `Línea ${pin.line + 1}`;
-      this.statusBarItem.text = `$(bookmark) ↑ ${label}`;
-      this.statusBarItem.tooltip = `${pin.file}:${pin.line + 1}`;
-      this.statusBarItem.command = 'pinpoint.jumpToNearestPinAbove';
+      const arrow = pin.line <= firstVisibleLine ? '↑' : '↓';
+      this.statusBarItem.text = `$(bookmark) ${arrow} ${label}`;
+      this.statusBarItem.tooltip = `Ir al pin: ${pin.file}:${pin.line + 1}`;
+      this.statusBarItem.command = {
+        title: 'Ir al pin',
+        command: 'pinpoint.navigateToPin',
+        arguments: [pin],
+      };
       this.statusBarItem.show();
       this.decorationService.updateStickyPin(editor, pin, firstVisibleLine);
     } else {
+      this.lastStickyPin = undefined;
       this.statusBarItem.hide();
       this.decorationService.clearStickyPin(editor);
     }
@@ -358,6 +366,10 @@ export class CommandController {
     const pins = this.pinService.getPins();
     this.treeDataProvider.refresh(pins);
     this.codeLensProvider.refresh(pins);
+
+    if (vscode.window.activeTextEditor) {
+      this.updateStickyPin(vscode.window.activeTextEditor);
+    }
   }
 
   public dispose(): void {
